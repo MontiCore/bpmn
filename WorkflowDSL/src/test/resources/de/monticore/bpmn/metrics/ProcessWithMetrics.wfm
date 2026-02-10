@@ -1,0 +1,13 @@
+// package de.monticore.bpmn.metrics;
+
+process ProcessWithMetrics {
+  task t1;
+  task t2;
+  task t3;
+
+  metrics {
+    duration: s;
+  } for group g1 {
+    t1, t2;
+  }
+}

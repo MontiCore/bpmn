@@ -1,0 +1,10 @@
+/* (c) https://github.com/MontiCore/monticore */
+package de.monticore.bpmn;
+
+import de.monticore.tagging.Tags;
+import de.monticore.siunit.SIUnits;
+
+grammar MetricTags extends Tags, SIUnits {
+  start TagUnit;
+  MetricTag implements Tag = Name "=" "[" metricName:Name ":" type:SIUnit "]";
+}

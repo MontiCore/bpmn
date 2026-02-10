@@ -1,0 +1,9 @@
+process AllReferencedTasksExist {
+  task t1;
+
+  metrics {
+    duration: s;
+  } for group g1 {
+    t1;
+  }
+}

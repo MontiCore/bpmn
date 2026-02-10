@@ -1,0 +1,5 @@
+process ProcessWithoutMetrics {
+  task t1;
+  task t2;
+  task t3;
+}
