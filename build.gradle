@@ -16,7 +16,7 @@ description = "BPMN-DSL"
 
 allprojects {
     group 'de.monticore.lang'
-    buildDir = "$projectDir/target"
+    layout.buildDirectory = layout.projectDirectory.dir("target")
 
     repositories {
         if (("true").equals(getProperty('useLocalRepo'))) {
