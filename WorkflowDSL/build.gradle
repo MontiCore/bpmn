@@ -7,7 +7,6 @@ plugins {
 }
 
 group = "de.monticore.lang"
-sourceCompatibility = '11'
 
 test {
     useJUnitPlatform()
