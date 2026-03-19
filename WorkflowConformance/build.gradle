@@ -21,7 +21,11 @@ dependencies {
     implementation project(":WorkflowDSL")
     implementation group: 'de.monticore', name: 'monticore-runtime', version: mc_version
     implementation "de.monticore:monticore-grammar:$mc_version"
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit_jupiter_version"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:$junit_jupiter_version"
 }
 
 test {

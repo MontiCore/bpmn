@@ -46,7 +46,7 @@ subprojects {
     }
 
     tasks.withType(Test).configureEach {
-        useJUnit()
+        useJUnitPlatform()
         testLogging {
             // controls whether test output is shown
             showStandardStreams = !("false").equals(getProperty('showTestOutput'))

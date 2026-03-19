@@ -41,6 +41,7 @@ dependencies {
     /*------------------------TESTING-----------------------------------*/
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:$junit_jupiter_version"
 }
 
 // build sources jar in addition
