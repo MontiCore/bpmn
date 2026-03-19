@@ -72,7 +72,7 @@ subprojects {
             }
         }
         reports {
-            junitXml.required = false
+            junitXml.required = true
             html.required = false
         }
     }
