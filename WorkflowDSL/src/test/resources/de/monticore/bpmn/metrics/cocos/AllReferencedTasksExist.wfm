@@ -3,7 +3,7 @@ process AllReferencedTasksExist {
 
   metrics {
     duration: s;
-  } for group g1 {
+  } applied to {
     t1;
   }
 }

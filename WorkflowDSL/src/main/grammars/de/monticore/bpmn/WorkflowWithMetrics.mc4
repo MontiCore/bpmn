@@ -6,7 +6,10 @@ import de.monticore.siunit.SIUnits;
 grammar WorkflowWithMetrics extends Workflow, SIUnits {
     start WorkflowCompilationUnit;
 
-    MetricsBlock implements FlowElement = "metrics" "{" ( MetricDef ";")* "}"
-                                          "for" "group" Name "{" ( referencedTask:Name@WFActivity "," )* referencedTask:Name@WFActivity ";" "}";
+    MetricsBlock implements FlowElement =
+        "metrics" "{" ( MetricDef ";")* "}"
+        "applied" "to" "{"
+          referencedTask:(Name@WFActivity || "," )+ ";"
+        "}";
     MetricDef = Name ":" SIUnit;
 }

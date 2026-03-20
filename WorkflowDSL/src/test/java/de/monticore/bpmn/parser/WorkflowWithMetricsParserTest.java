@@ -47,7 +47,7 @@ public class WorkflowWithMetricsParserTest {
   public void testParseMetricBlock() throws IOException {
     WorkflowWithMetricsMill.init();
     WorkflowWithMetricsMill.parser().parse_StringMetricsBlock(
-        "metrics { someName: s; } for group g1 { t1; }");
+        "metrics { someName: s; } applied to { t1; }");
   }
   
   @Test

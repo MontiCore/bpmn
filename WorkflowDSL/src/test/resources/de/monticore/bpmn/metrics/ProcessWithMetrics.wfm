@@ -7,7 +7,7 @@ process ProcessWithMetrics {
 
   metrics {
     duration: s;
-  } for group g1 {
+  } applied to {
     t1, t2;
   }
 }

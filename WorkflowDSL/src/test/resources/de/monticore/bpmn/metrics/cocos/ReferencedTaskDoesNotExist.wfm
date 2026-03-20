@@ -3,7 +3,7 @@ process ReferencedTaskDoesNotExist {
 
   metrics {
     duration: s;
-  } for group g1 {
+  } applied to {
     t2;
   }
 }
