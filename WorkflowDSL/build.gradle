@@ -7,7 +7,6 @@ plugins {
 }
 
 group = "de.monticore.lang"
-sourceCompatibility = '11'
 
 test {
     useJUnitPlatform()
@@ -26,7 +25,7 @@ dependencies {
     implementation "org.jgrapht:jgrapht-guava:$jgrapht_version"
     implementation "org.zeroturnaround:zt-exec:$exec_version"
     implementation "ch.qos.logback:logback-classic:$logback_version"
-    implementation "com.google.code.findbugs:jsr305:$jsr305_version"
+    implementation "com.github.spotbugs:spotbugs-annotations:$spotbugs_version"
 
     /*----------------------Timer-Conditions-------------------------*/
     implementation "joda-time:joda-time:$joda_time_version"
@@ -41,6 +40,7 @@ dependencies {
     /*------------------------TESTING-----------------------------------*/
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:$junit_jupiter_version"
 }
 
 // build sources jar in addition

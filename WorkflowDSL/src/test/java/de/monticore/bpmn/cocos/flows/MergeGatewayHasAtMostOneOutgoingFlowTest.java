@@ -9,7 +9,8 @@ import de.monticore.bpmn.workflow._cocos.WorkflowCoCoChecker;
 import de.se_rwth.commons.logging.Finding;
 import java.io.IOException;
 import java.util.Collection;
-import org.jgrapht.io.ExportException;
+
+import org.jgrapht.nio.ExportException;
 import org.junit.jupiter.api.Test;
 
 class MergeGatewayHasAtMostOneOutgoingFlowTest extends AbstractCoCoTest {

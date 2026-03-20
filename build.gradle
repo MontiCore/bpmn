@@ -4,16 +4,19 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 
 plugins {
+    id 'java'
     id "maven-publish"
     id "io.github.themrmilchmann.ecj" version "0.2.0" apply false
     id "de.se_rwth.codestyle" version "$mc_version"
 }
 
+
+
 description = "BPMN-DSL"
 
 allprojects {
     group 'de.monticore.lang'
-    buildDir = "$projectDir/target"
+    layout.buildDirectory = layout.projectDirectory.dir("target")
 
     repositories {
         if (("true").equals(getProperty('useLocalRepo'))) {
@@ -33,8 +36,17 @@ subprojects {
     apply plugin: 'io.github.themrmilchmann.ecj'
     apply plugin: 'maven-publish'
 
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+    ecj {
+        compilerVersion = "3.43.0"
+    }
+
     tasks.withType(Test).configureEach {
-        useJUnit()
+        useJUnitPlatform()
         testLogging {
             // controls whether test output is shown
             showStandardStreams = !("false").equals(getProperty('showTestOutput'))
@@ -60,15 +72,13 @@ subprojects {
             }
         }
         reports {
-            junitXml.required = false
+            junitXml.required = true
             html.required = false
         }
     }
 
     tasks.withType(JavaCompile).tap {
         configureEach {
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
             options.encoding = "UTF-8"
             options.deprecation false
             options.warnings = false
