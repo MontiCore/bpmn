@@ -50,17 +50,11 @@ jar.dependsOn(shadowJar)
 
 publishing {
   publications {
-    mavenJava(MavenPublication) {
+    maven(MavenPublication) {
       // from components.java
       artifact shadowJar
       artifactId = "bpmn"
     }
-  }
-  repositories.maven {
-    name = "$SE_Nexus_ID"
-    credentials.username = mavenUser
-    credentials.password = mavenPassword
-    url = version.endsWith('SNAPSHOT') ? "$snapshotsRepoUrl" : "$releasesRepoUrl"
   }
 }
 

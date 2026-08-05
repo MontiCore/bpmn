@@ -74,14 +74,4 @@ defaultTasks 'build'
 
 /////////////////////////   Deployment  //////////////////////////////////
 
-// configure deployment
-publishing {
-    repositories.maven {
-        credentials.username = mavenUser
-        credentials.password = mavenPassword
-
-        def releasesRepoUrl = "https://nexus.se.rwth-aachen.de/content/repositories/umlp-releases/"
-        def snapshotsRepoUrl = "https://nexus.se.rwth-aachen.de/content/repositories/umlp-snapshots/"
-        url = version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
-    }
-}
+// configure deployment (via root)
