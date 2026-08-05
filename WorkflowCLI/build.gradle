@@ -51,9 +51,9 @@ jar.dependsOn(shadowJar)
 publishing {
   publications {
     maven(MavenPublication) {
-      // from components.java
-      artifact shadowJar
-      artifactId = "bpmn"
+      // from components.java (via parent)
+      // shadowJar is included with the java components
+      artifactId = "bpmn-cli"
     }
   }
 }
