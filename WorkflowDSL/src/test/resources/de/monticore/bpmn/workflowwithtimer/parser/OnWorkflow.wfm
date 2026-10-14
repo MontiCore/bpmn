@@ -1,0 +1,8 @@
+/* (c) https://github.com/MontiCore/monticore */
+process OnConditionWorkflow {
+  start event Start;
+  event Scheduled catch timer [on 2026-07-20T12:00:00Z];
+  end event Done;
+
+  Start -> Scheduled -> Done;
+}
