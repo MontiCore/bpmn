@@ -109,6 +109,7 @@ tasks.register('buildBPMN') {
             ":WorkflowCLI:build",
             ":WorkflowConformance:build",
             ":WorkflowDSL:build",
+            ":WorkflowEngine:build",
             gradle.includedBuilds*.task(":build")
     )
 }
@@ -123,6 +124,7 @@ tasks.register('testBPMN') {
             ":WorkflowCLI:test",
             ":WorkflowConformance:test",
             ":WorkflowDSL:test",
+            ":WorkflowEngine:test",
             gradle.includedBuilds*.task(":test")
     )
 }
@@ -167,7 +169,8 @@ tasks.register('cleanBPMN') {
     dependsOn(
             ":WorkflowCLI:clean",
             ":WorkflowConformance:clean",
-            ":WorkflowDSL:clean"
+            ":WorkflowDSL:clean",
+            ":WorkflowEngine:clean"
     )
 }
 

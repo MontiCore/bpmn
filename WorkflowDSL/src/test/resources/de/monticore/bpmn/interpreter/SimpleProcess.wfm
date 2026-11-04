@@ -1,0 +1,12 @@
+/* (c) https://github.com/MontiCore/monticore */
+package de.monticore.bpmn.interpreter;
+
+process SimpleProcess {
+
+  start event Start;
+  task Prepare;
+  task Ship;
+  end event Done;
+
+  Start -> Prepare -> Ship -> Done;
+}

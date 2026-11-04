@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.monticore.bpmn.AbstractTest;
 import de.monticore.bpmn.workflow.WorkflowMill;
 import de.monticore.bpmn.workflow._ast.ASTWFTask;
+import de.monticore.bpmn.workflow._ast.ASTWorkflowCompilationUnit;
 import de.monticore.bpmn.workflow._parser.WorkflowParser;
 import java.io.IOException;
 import java.io.StringReader;
@@ -22,7 +23,8 @@ public class WorkflowParserTest extends AbstractTest {
   @Test
   public void testRequestVacation() throws IOException {
     String modelName = "de.monticore.bpmn.examples.RequestVacation";
-    parseModel(modelName);
+    ASTWorkflowCompilationUnit ab = parseModel(modelName);
+    System.out.println(ab);
   }
   
   @Test
@@ -42,6 +44,8 @@ public class WorkflowParserTest extends AbstractTest {
   public void testTask() throws IOException {
     String modelName = "de.monticore.bpmn.petrinet.TaskProcess";
     parseModel(modelName);
+    ASTWorkflowCompilationUnit ab = parseModel(modelName);
+    System.out.println(ab);
   }
   
   @Test
