@@ -4,7 +4,10 @@ package de.monticore.bpmn.petrinet;
 import de.monticore.bpmn.cds.Domain.*;
 
 process TaskProcess {
-  
+  start event S1;
+  end event E1;
   task T1;
+  task T44;
   
+  S1 -> T1 -> T44 -> E1;
 }

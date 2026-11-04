@@ -1,0 +1,17 @@
+/* (c) https://github.com/MontiCore/monticore */
+package de.monticore.bpmn.interpreter;
+
+process ParallelProcess {
+
+  start event Start;
+  split and Fork;
+  task A;
+  task B;
+  merge and Join;
+  end event Done;
+
+  Start -> Fork;
+  Fork -> A -> Join;
+  Fork -> B -> Join;
+  Join -> Done;
+}

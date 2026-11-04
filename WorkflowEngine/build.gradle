@@ -1,0 +1,40 @@
+/* (c) https://github.com/MontiCore/monticore */
+plugins {
+    id "java-library"
+    id "jacoco"
+    id "de.se_rwth.codestyle" version "$mc_version"
+}
+
+group = "de.monticore.lang"
+
+test {
+    useJUnitPlatform()
+}
+
+dependencies {
+    api project(":WorkflowDSL")
+
+    implementation "de.monticore:monticore-runtime:$mc_version"
+    implementation "de.monticore:monticore-grammar:$mc_version"
+    implementation "de.monticore.lang:cd4analysis:$mc_version"
+
+    implementation "com.google.guava:guava:$guava_version"
+    implementation "com.google.code.gson:gson:$gson_version"
+    implementation "joda-time:joda-time:$joda_time_version"
+    implementation "com.cronutils:cron-utils:$cron_utils_version"
+    implementation "ch.qos.logback:logback-classic:$logback_version"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:$junit_jupiter_version"
+}
+
+// build sources jar in addition
+tasks.register('sourcesJar', Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = "sources"
+}
+
+javadoc.failOnError = false
+
+defaultTasks 'build'

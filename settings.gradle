@@ -19,5 +19,6 @@ rootProject.name="BPMN"
 include(':WorkflowCLI')
 include(':WorkflowDSL')
 include(':WorkflowConformance')
+include(':WorkflowEngine')
 
 
