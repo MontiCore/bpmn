@@ -1,0 +1,12 @@
+start
+expect open Approve, Reminder, Timeout
+# after one day the reminder occurs once; the approval stays open
+wait P1D
+# the reminder was a one-off timer, but its event stays open as long as the approval runs
+expect open Approve, Reminder, SendReminder, Timeout
+complete SendReminder
+# two more days later the timeout cancels the approval
+wait P2D
+expect open Escalate
+complete Escalate
+expect status COMPLETED

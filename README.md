@@ -49,6 +49,8 @@ The possible options are:
 | `-v,--version`             | Prints version information.                                                                                                |
 | `-ref,--reference <file>`  | Parses the file as a reference process model and checks if the input process model specified by `-i` is conform to it.    |
 | `-m,--map <string>`        | Specify the names of stereotypes that are used as incarnation mappings in the concrete model. Default: `incarnates`        |
+| `-x,--execute <script>`    | Executes the input process model with the workflow engine and prints what happens. The script (optional) drives the instance. |
+| `-var,--variable <n=v>`    | An initial value of a data object for the execution, e.g., `-var amount=150`. May be given several times.                 |
 
 
 ### Small Example Workflow Model
@@ -154,4 +156,31 @@ the artifact path has to be set to `doc/` using the option `-path`:
 
 ```shell
 java -jar WorkflowCLI/target/libs/BPMN.jar -i doc/de/monticore/bpmn/examples/OrderToDeliveryWorkflow.wfm -path doc/ -pp
+```
+
+### Step 5: Executing a model
+
+The tool can execute a process model with the
+[Workflow Engine](WorkflowEngine/src/main/java/de/monticore/bpmn/engine/WorkflowEngine.md).
+It deploys the model, starts one instance and prints every step. Without a
+script the instance is driven automatically:
+
+```shell
+java -jar WorkflowCLI/target/libs/BPMN.jar -i doc/PaperAuthoring.wfm -x
+```
+
+A script drives the instance step by step, lets time pass for timers and states
+what is expected. The folder [`WorkflowEngine/examples`](WorkflowEngine/examples/README.md)
+contains models with scripts, e.g., an approval with a reminder and a timeout:
+
+```shell
+java -jar WorkflowCLI/target/libs/BPMN.jar -i WorkflowEngine/examples/Approval.wfm -x WorkflowEngine/examples/Approval.script
+```
+
+The `OrderToDeliveryWorkflow` from above can be executed as well. The objects of
+its data objects, whose types come from the class diagram, are given as plain
+data in the script:
+
+```shell
+java -jar WorkflowCLI/target/libs/BPMN.jar -i WorkflowEngine/examples/OrderToDeliveryWorkflow.wfm -path WorkflowEngine/examples -x WorkflowEngine/examples/OrderToDeliveryWorkflow.script
 ```

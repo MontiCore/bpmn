@@ -4,6 +4,7 @@ package de.monticore.bpmn.engine.instance;
 import de.monticore.bpmn.engine.state.PersistentProcessState;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * One running or finished execution of a process definition, i.e., a row of the process instance
@@ -22,6 +23,9 @@ public class ProcessInstance {
   protected final Instant createdAt;
   
   protected ProcessInstanceStatus status;
+  
+  /** Why the instance is {@link ProcessInstanceStatus#FAILED}; absent otherwise. */
+  protected String failure;
   
   protected PersistentProcessState state;
   
@@ -48,6 +52,13 @@ public class ProcessInstance {
   public ProcessInstanceStatus getStatus() { return status; }
   
   public void setStatus(final ProcessInstanceStatus status) { this.status = status; }
+  
+  /** @return why the instance failed, empty if it did not */
+  public Optional<String> getFailure() {
+    return Optional.ofNullable(failure);
+  }
+  
+  public void setFailure(final String failure) { this.failure = failure; }
   
   public PersistentProcessState getState() { return state; }
   

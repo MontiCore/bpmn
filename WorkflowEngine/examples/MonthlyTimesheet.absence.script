@@ -1,0 +1,22 @@
+# An absence is entered during the review: the review is withdrawn and recording starts again.
+start
+complete RecordHours
+complete SubmitTimesheet
+complete CheckWorkingTime hasViolations=false
+complete RegisterSubmission
+complete AnnounceSubmission
+trigger AbsenceEntered
+expect open ResetAfterAbsence
+complete ResetAfterAbsence
+complete AnnounceReset
+# second round; the deadline timer runs anew for the new recording
+expect open RecordHours, SubmissionDeadline
+complete RecordHours
+complete SubmitTimesheet
+complete CheckWorkingTime hasViolations=false
+complete RegisterSubmission
+complete AnnounceSubmission
+complete Review correct=true
+complete Release
+expect status COMPLETED
+history

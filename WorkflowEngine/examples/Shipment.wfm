@@ -1,0 +1,29 @@
+/* (c) https://github.com/MontiCore/monticore */
+
+/* Parallel work and optional extras: the inclusive merge waits for the extras that were chosen. */
+process Shipment {
+  data express : boolean;
+  data fragile : boolean;
+
+  start event Ordered;
+  split and Fork;
+  task Pack;
+  task Invoice;
+  merge and Sync;
+  split ior Extras;
+  task BookCourier;
+  task AddPadding;
+  task StandardHandling;
+  merge ior ExtrasDone;
+  task HandOver;
+  end event Shipped;
+
+  Ordered -> Fork;
+  Fork -> Pack -> Sync;
+  Fork -> Invoice -> Sync;
+  Sync -> Extras;
+  Extras -> [express] BookCourier -> ExtrasDone;
+  Extras -> [fragile] AddPadding -> ExtrasDone;
+  Extras -> [_] StandardHandling -> ExtrasDone;
+  ExtrasDone -> HandOver -> Shipped;
+}

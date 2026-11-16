@@ -1,0 +1,10 @@
+start
+# the sub-process runs its inner flow; it cannot be completed from outside
+expect open Validate.CheckData, Validate.OnInvalid
+complete CheckData valid=true
+# the sub-process ended on its own; the review needs two completions
+expect open Review
+complete Review
+expect open Review
+complete Review
+expect status COMPLETED

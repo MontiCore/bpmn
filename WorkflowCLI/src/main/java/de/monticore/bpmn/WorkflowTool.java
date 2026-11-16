@@ -4,6 +4,7 @@ package de.monticore.bpmn;
 import com.google.common.collect.Lists;
 import de.monticore.bpmn.cocos.WorkflowCoCos;
 import de.monticore.bpmn.conformance.WfConformanceChecker;
+import de.monticore.bpmn.engine.runner.WorkflowRunner;
 import de.monticore.bpmn.trafos.AddMoreImports;
 import de.monticore.bpmn.trafos.AddNameToInlineFlowNodes;
 import de.monticore.bpmn.trafos.AddSequenceFlowToFlowNodes;
@@ -18,6 +19,7 @@ import de.monticore.symboltable.ImportStatement;
 import de.se_rwth.commons.logging.Log;
 import org.apache.commons.cli.*;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
@@ -27,10 +29,18 @@ public class WorkflowTool extends de.monticore.bpmn.workflow.WorkflowTool {
   protected static final ImportStatement OCL_TYPES = new ImportStatement(
       "de.monticore.bpmn._types.ocl.DefaultTypes", true);
   
+  /** The result of an execution with {@code -x}: 0 if all steps and expectations succeeded. */
+  protected int executionResult = 0;
+  
   public static void main(String[] args) {
     WorkflowTool tool = new WorkflowTool();
     tool.run(args);
+    if (tool.executionResult != 0) {
+      System.exit(tool.executionResult);
+    }
   }
+  
+  public int getExecutionResult() { return executionResult; }
   
   @Override
   public void init() {
@@ -113,6 +123,33 @@ public class WorkflowTool extends de.monticore.bpmn.workflow.WorkflowTool {
         checker.checkConformance(model.get(), reference.get(), mapping);
       }
       
+      // execution with the workflow engine
+      if (cmd.hasOption("x")) {
+        final WorkflowRunner runner = new WorkflowRunner(System.out);
+        for (String path : modelPath) {
+          runner.withSymbolPath(Paths.get(path));
+        }
+        if (cmd.hasOption("var")) {
+          for (String assignment : cmd.getOptionValues("var")) {
+            runner.withInitialValue(assignment);
+          }
+        }
+        final String script = cmd.getOptionValue("x");
+        if (script == null) {
+          executionResult = runner.run(Path.of(modelFile), (java.io.BufferedReader) null);
+        }
+        else {
+          try (
+              java.io.BufferedReader reader = java.nio.file.Files.newBufferedReader(Path.of(script))
+          ) {
+            executionResult = runner.run(Path.of(modelFile), reader);
+          }
+          catch (java.io.IOException e) {
+            Log.error("0xWFM0008 The script '" + script + "' could not be read: " + e.getMessage());
+          }
+        }
+      }
+      
     }
     catch (ParseException e) {
       Log.error(Messages.get("0xWFM0006", e.getMessage()));
@@ -154,6 +191,17 @@ public class WorkflowTool extends de.monticore.bpmn.workflow.WorkflowTool {
         "Specify the names of stereotypes that are used as incarnation mappings in the concrete model. Default : 'incarnates'")
         .numberOfArgs(1).build();
     options.addOption(map);
+    
+    // execute the process model
+    Option execute = Option.builder("x").longOpt("execute").desc(
+        "Executes the input process model specified by `-i` with the workflow engine and prints what happens. The optional argument is a script that drives the instance; without it the instance is driven automatically.")
+        .optionalArg(true).numberOfArgs(1).build();
+    options.addOption(execute);
+    
+    Option variable = Option.builder("var").longOpt("variable").desc(
+        "An initial value of a data object for the execution, e.g., `-var amount=150`. May be given several times.")
+        .hasArgs().build();
+    options.addOption(variable);
     
     return options;
   }

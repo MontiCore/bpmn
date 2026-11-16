@@ -1,0 +1,47 @@
+ /* (c) https://github.com/MontiCore/monticore */ 
+package de.monticore.bpmn.cds;
+
+classdiagram OrderToDelivery{
+    public class InventoryAvailabilityChecker{
+        public boolean allProductsAvailable;
+        public List<Product> unavailableProducts;
+    }
+
+    public class Order{
+        public String orderID;
+        public String customerID;
+        public int numberOfOrderedProducts;
+        public List<Product> orderList;
+        public InventoryAvailabilityChecker checker;
+        public double totalCost;
+    }
+
+    public class Product{
+        public String productID;
+        public String name;
+        public int orderQuantity;
+    }
+
+    public class CustomerDeliveryAgreement{
+        public String customerID;
+        public boolean isOrderPickedUp;
+        public DestinationAddress address;
+    }
+
+    public class DestinationAddress{
+        public String street;
+        public String houseNumber;
+        public String postalCode;
+        public String city;
+    }
+
+    public class PaymentValidityChecker{
+        public boolean paymentValid;
+        public boolean cardNumberValid;
+        public boolean cardVerificationValueValid;
+        public String paymentMethod;
+        public String cardNumber;
+        public String cardVerificationValue;
+        public String cardExpirationDate;
+    }
+}

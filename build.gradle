@@ -156,6 +156,7 @@ tasks.register('publishBPMNToMavenLocal') {
     dependsOn(
             ":WorkflowCLI:publishToMavenLocal",
             ":WorkflowDSL:publishToMavenLocal",
+            ":WorkflowEngine:publishToMavenLocal",
             gradle.includedBuilds*.task(':publishToMavenLocal')
     )
 }
@@ -176,7 +177,8 @@ tasks.register('cleanBPMN') {
 
 configure([
            project(':WorkflowCLI'),
-           project(':WorkflowDSL')
+           project(':WorkflowDSL'),
+           project(':WorkflowEngine')
 ]){
     apply plugin: 'maven-publish'
 

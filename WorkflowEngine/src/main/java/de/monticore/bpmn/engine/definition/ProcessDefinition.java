@@ -3,6 +3,7 @@ package de.monticore.bpmn.engine.definition;
 
 import de.monticore.bpmn.workflow._ast.ASTWFProcess;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -27,6 +28,9 @@ public class ProcessDefinition {
   
   /** Not persisted; rebuilt from {@link #source} when the definition is loaded. */
   protected transient ASTWFProcess process;
+  
+  /** Not persisted; the constructs of the model that the engine executes in a simplified way. */
+  protected transient List<String> limitations = List.of();
   
   public ProcessDefinition(final String key, final int version, final String source,
       final Instant deployedAt, final ASTWFProcess process) {
@@ -58,6 +62,16 @@ public class ProcessDefinition {
   }
   
   public void setProcess(final ASTWFProcess process) { this.process = process; }
+  
+  /**
+   * @return the constructs of the model that the engine does not execute as BPMN defines them,
+   * one message per construct; empty if the process is executed as modelled
+   */
+  public List<String> getLimitations() { return limitations; }
+  
+  public void setLimitations(final List<String> limitations) {
+    this.limitations = List.copyOf(limitations);
+  }
   
   @Override
   public String toString() { return "ProcessDefinition[" + id + "]"; }

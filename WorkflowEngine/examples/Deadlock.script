@@ -1,0 +1,4 @@
+set fast = true
+start
+complete A
+expect status FAILED

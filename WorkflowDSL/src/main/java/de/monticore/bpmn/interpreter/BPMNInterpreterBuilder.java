@@ -6,7 +6,6 @@ import de.monticore.bpmn.workflow.WorkflowMill;
 import de.monticore.bpmn.workflow._ast.ASTWFProcess;
 import de.monticore.bpmn.workflow._visitor.WorkflowTraverser;
 import de.monticore.expressions.assignmentexpressions.interpreter.AssignmentExpressionsInterpreter;
-import de.monticore.expressions.commonexpressions.interpreter.CommonExpressionsInterpreter;
 import de.monticore.expressions.expressionsbasis.interpreter.ExpressionCalculationLogVisitor;
 import de.monticore.expressions.expressionsbasis.interpreter.ExpressionsBasisInterpreter;
 import de.monticore.expressions.lambdaexpressions.interpreter.LambdaExpressionsInterpreter;
@@ -43,7 +42,7 @@ public class BPMNInterpreterBuilder {
     
     // expressions, i.e., flow conditions, gateway guards and loop conditions
     traverser.setExpressionsBasisHandler(new ExpressionsBasisInterpreter(iData));
-    traverser.setCommonExpressionsHandler(new CommonExpressionsInterpreter(iData));
+    traverser.setCommonExpressionsHandler(new WorkflowCommonExpressionsInterpreter(iData));
     traverser.setAssignmentExpressionsHandler(new AssignmentExpressionsInterpreter(iData));
     traverser.setLambdaExpressionsHandler(new LambdaExpressionsInterpreter(iData));
     traverser.setMCCommonLiteralsHandler(new MCCommonLiteralsInterpreter(iData));

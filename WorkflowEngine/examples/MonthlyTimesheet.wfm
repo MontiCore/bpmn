@@ -1,0 +1,56 @@
+/* (c) https://github.com/MontiCore/monticore */
+
+/*
+ * The monthly timesheet of an employee: recording, submission, automatic check of the working
+ * time and review. A reminder is sent if the timesheet is not submitted in time, and the review
+ * is withdrawn if an absence is entered meanwhile.
+ */
+process MonthlyTimesheet {
+  data hasViolations : boolean;
+  data correct : boolean;
+  message absenceEntered : String;
+
+  lane Employee {
+    task RecordHours {
+      boundary event SubmissionDeadline catch noninterrupt timer [after P14D];
+    }
+    task SubmitTimesheet;
+  }
+
+  lane Reviewer {
+    task Review {
+      boundary event AbsenceEntered catch message absenceEntered;
+    }
+  }
+
+  lane System {
+    task CheckWorkingTime;
+    task NotifyViolation;
+    task RegisterSubmission;
+    task AnnounceSubmission;
+    task SendReminder;
+    task Release;
+    task Reset;
+    task AnnounceRejection;
+    task ResetAfterAbsence;
+    task AnnounceReset;
+  }
+
+  start event MonthOpened;
+  end event Released;
+  end event Reminded;
+
+  merge xor BeginRecording;
+  split xor Violation;
+  split xor Correct;
+
+  MonthOpened -> BeginRecording -> RecordHours -> SubmitTimesheet -> CheckWorkingTime
+    -> Violation;
+  Violation -> [hasViolations] NotifyViolation -> BeginRecording;
+  Violation -> [_] RegisterSubmission -> AnnounceSubmission -> Review -> Correct;
+  Correct -> [correct] Release -> Released;
+  Correct -> [_] Reset -> AnnounceRejection -> BeginRecording;
+
+  SubmissionDeadline -> SendReminder -> Reminded;
+  AbsenceEntered -> ResetAfterAbsence -> AnnounceReset -> BeginRecording;
+}

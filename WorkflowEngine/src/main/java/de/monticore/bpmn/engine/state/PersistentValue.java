@@ -1,26 +1,36 @@
 /* (c) https://github.com/MontiCore/monticore */
 package de.monticore.bpmn.engine.state;
 
-import de.monticore.values.MCValue;
-import de.monticore.values.MCValueBoolean;
-import de.monticore.values.MCValueDouble;
-import de.monticore.values.MCValueInt;
-import de.monticore.values.MCValueObject;
-import de.se_rwth.commons.logging.Log;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.ToNumberPolicy;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * The durable form of one variable value.
+ * The durable form of the value of one data object.
  *
- * <p>An {@link MCValue} of the interpreter may wrap an arbitrary Java object, which cannot be
- * stored in general. This class covers the value kinds a process variable can have in a stored
- * instance; everything else is reported and stored as {@code NULL}.
+ * <p>A data object of a process may hold an arbitrary Java object, which cannot be stored in
+ * general. A stored instance therefore knows three forms of a value:
+ *
+ * <ul>
+ * <li>simple values: {@code boolean}, {@code int}, {@code double} and {@code String};
+ * <li>plain data: maps and lists of simple values, stored as {@link Kind#JSON}. An object of a
+ * model type can be given this way, its attributes are the keys of the map;
+ * <li>a {@link Kind#REFERENCE} to an object that the application keeps itself, e.g., the key of an
+ * entity in its database, cf. {@link DataObjectResolver}.
+ * </ul>
  */
 public class PersistentValue {
   
   public enum Kind {
-    BOOLEAN, INT, DOUBLE, STRING, NULL
+    BOOLEAN, INT, DOUBLE, STRING, JSON, REFERENCE, NULL
   }
+  
+  /** Keeps integers as integers; by default Gson reads every number as a double. */
+  protected static final Gson GSON = new GsonBuilder().setObjectToNumberStrategy(
+      ToNumberPolicy.LONG_OR_DOUBLE).serializeNulls().create();
   
   protected final Kind kind;
   
@@ -36,65 +46,68 @@ public class PersistentValue {
   
   public String getValue() { return value; }
   
-  /** Converts a value of the interpreter into its durable form. */
-  public static PersistentValue of(final MCValue value) {
-    if (value == null || value.isVoid()) {
-      return new PersistentValue(Kind.NULL, null);
+  /**
+   * Converts a plain Java value into its durable form.
+   *
+   * @param value a simple value or plain data
+   * @return the durable form, empty if the value is an object that cannot be stored as data
+   */
+  public static Optional<PersistentValue> of(final Object value) {
+    if (value == null) {
+      return Optional.of(new PersistentValue(Kind.NULL, null));
     }
-    if (value.isBoolean()) {
-      return new PersistentValue(Kind.BOOLEAN, String.valueOf(value.asBoolean()));
+    if (value instanceof Boolean) {
+      return Optional.of(new PersistentValue(Kind.BOOLEAN, String.valueOf(value)));
     }
-    if (value.isInt()) {
-      return new PersistentValue(Kind.INT, String.valueOf(value.asInt()));
+    if (value instanceof Integer || value instanceof Long || value instanceof Short
+        || value instanceof Byte) {
+      return Optional.of(new PersistentValue(Kind.INT, String.valueOf(((Number) value)
+          .intValue())));
     }
-    if (value.isDouble()) {
-      return new PersistentValue(Kind.DOUBLE, String.valueOf(value.asDouble()));
+    if (value instanceof Number number) {
+      return Optional.of(new PersistentValue(Kind.DOUBLE, String.valueOf(number.doubleValue())));
     }
-    final Object nativeValue = value.isObject() ? value.asNativeObject() : null;
-    if (nativeValue == null) {
-      return new PersistentValue(Kind.NULL, null);
+    if (value instanceof String || value instanceof Character) {
+      return Optional.of(new PersistentValue(Kind.STRING, String.valueOf(value)));
     }
-    if (nativeValue instanceof String string) {
-      return new PersistentValue(Kind.STRING, string);
+    if (isPlainData(value)) {
+      return Optional.of(new PersistentValue(Kind.JSON, GSON.toJson(value)));
     }
-    Log.warn("0xWFE0101 A value of type '" + value.printType()
-        + "' cannot be persisted yet and is dropped. Extend PersistentValue to support it.");
-    return new PersistentValue(Kind.NULL, null);
+    return Optional.empty();
   }
   
-  /** Converts a plain Java value into its durable form. */
-  public static PersistentValue of(final Object value) {
-    return switch (value) {
-      case null -> new PersistentValue(Kind.NULL, null);
-      case Boolean b -> new PersistentValue(Kind.BOOLEAN, String.valueOf(b));
-      case Integer i -> new PersistentValue(Kind.INT, String.valueOf(i));
-      case Long l -> new PersistentValue(Kind.INT, String.valueOf(l.intValue()));
-      case Double d -> new PersistentValue(Kind.DOUBLE, String.valueOf(d));
-      case Float f -> new PersistentValue(Kind.DOUBLE, String.valueOf(f.doubleValue()));
-      case String s -> new PersistentValue(Kind.STRING, s);
-      default -> PersistentValue.of(de.monticore.values.MCValueFactory.createMIValueOfNativeObject(
-          value));
-    };
+  /** @return the durable form of a reference to an object that the application keeps */
+  public static PersistentValue ofReference(final String reference) {
+    return new PersistentValue(Kind.REFERENCE, reference);
   }
   
-  /** @return the value of the interpreter, empty if the value is not set */
-  public Optional<MCValue> toMCValue() {
-    return switch (kind) {
-      case BOOLEAN -> Optional.of(new MCValueBoolean(Boolean.parseBoolean(value)));
-      case INT -> Optional.of(new MCValueInt(Integer.parseInt(value)));
-      case DOUBLE -> Optional.of(new MCValueDouble(Double.parseDouble(value)));
-      case STRING -> Optional.of(new MCValueObject(value));
-      case NULL -> Optional.empty();
-    };
+  /** @return whether the value only consists of maps, lists and simple values */
+  public static boolean isPlainData(final Object value) {
+    if (value == null || value instanceof Boolean || value instanceof Number
+        || value instanceof String || value instanceof Character) {
+      return true;
+    }
+    if (value instanceof Map<?, ?> map) {
+      return map.entrySet().stream().allMatch(entry -> entry.getKey() instanceof String
+          && isPlainData(entry.getValue()));
+    }
+    if (value instanceof Collection<?> collection) {
+      return collection.stream().allMatch(PersistentValue::isPlainData);
+    }
+    return false;
   }
   
-  /** @return the value as a plain Java object, {@code null} if it is not set */
+  /**
+   * @return the value as a plain Java object: a simple value, a map or a list; {@code null} if it
+   * is not set. A reference is returned as it is stored, it is not resolved.
+   */
   public Object toJavaObject() {
     return switch (kind) {
       case BOOLEAN -> Boolean.parseBoolean(value);
       case INT -> Integer.parseInt(value);
       case DOUBLE -> Double.parseDouble(value);
-      case STRING -> value;
+      case STRING, REFERENCE -> value;
+      case JSON -> GSON.fromJson(value, Object.class);
       case NULL -> null;
     };
   }

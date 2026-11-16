@@ -1,0 +1,10 @@
+# A product is not available: the order is cancelled.
+set order = {"orderID": "O-2", "customerID": "C-7", "numberOfOrderedProducts": 1}
+set checker = {"allProductsAvailable": false}
+set agreement = {"customerID": "C-7", "isOrderPickedUp": false}
+start
+complete ProcessOrder
+complete CheckProductAvailability
+expect open SendCancellationMessage
+complete SendCancellationMessage
+expect status COMPLETED

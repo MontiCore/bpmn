@@ -1,0 +1,8 @@
+start
+expect open Paid, Expired
+# the payment arrives in time, so the timer is dropped
+wait P2D
+trigger Paid
+expect open Ship
+complete Ship
+expect status COMPLETED

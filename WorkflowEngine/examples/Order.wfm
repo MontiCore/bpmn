@@ -1,0 +1,19 @@
+/* (c) https://github.com/MontiCore/monticore */
+
+/* A decision that depends on data: an order above 100 has to be approved. */
+process Order {
+  data amount : int;
+
+  start event Received;
+  task Check;
+  split xor Decision;
+  task Approve;
+  task Reject;
+  merge xor Join;
+  end event Done;
+
+  Received -> Check -> Decision;
+  Decision -> [amount > 100] Approve -> Join;
+  Decision -> [_] Reject -> Join;
+  Join -> Done;
+}

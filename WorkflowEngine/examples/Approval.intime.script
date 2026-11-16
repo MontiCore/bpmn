@@ -1,0 +1,5 @@
+# The approval is given in time: both timers are dropped.
+start
+wait PT4H
+complete Approve
+expect status COMPLETED

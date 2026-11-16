@@ -32,6 +32,9 @@ public class PersistentProcessState {
   
   protected boolean terminated = false;
   
+  /** Why the instance ended abnormally; absent if it did not. */
+  protected String failure;
+  
   /** Values of the data objects by name. */
   protected Map<String, PersistentValue> variables = new LinkedHashMap<>();
   
@@ -59,6 +62,10 @@ public class PersistentProcessState {
   
   public void setTerminated(final boolean terminated) { this.terminated = terminated; }
   
+  public String getFailure() { return failure; }
+  
+  public void setFailure(final String failure) { this.failure = failure; }
+  
   public Map<String, PersistentValue> getVariables() { return variables; }
   
   public void setVariables(final Map<String, PersistentValue> variables) {
@@ -67,13 +74,14 @@ public class PersistentProcessState {
   
   /** @return whether the instance carries no token at all anymore */
   public boolean isFinished() {
-    return terminated || (tokens.isEmpty() && running.isEmpty() && waiting.isEmpty());
+    return terminated || failure != null || (tokens.isEmpty() && running.isEmpty() && waiting
+        .isEmpty());
   }
   
   @Override
   public String toString() {
     return "PersistentProcessState[tokens=" + tokens + ", running=" + running + ", waiting="
-        + waiting + (terminated ? ", TERMINATED" : "") + "]";
+        + waiting + (terminated ? ", TERMINATED" : "") + (failure != null ? ", FAILED" : "") + "]";
   }
   
 }

@@ -1,0 +1,22 @@
+# The example of the README. Its data objects have types of a class diagram; here their objects
+# are given as plain data. The conditions of the process read their attributes.
+set order = {"orderID": "O-1", "customerID": "C-7", "numberOfOrderedProducts": 2, "totalCost": 99.5}
+set checker = {"allProductsAvailable": true}
+set agreement = {"customerID": "C-7", "isOrderPickedUp": false}
+start
+expect open ProcessOrder
+complete ProcessOrder
+# one instance of the check per ordered product
+complete CheckProductAvailability
+expect open CheckProductAvailability
+complete CheckProductAvailability
+# all products are available
+expect open PrepareAndPackProducts
+complete PrepareAndPackProducts
+# the customer does not pick the order up, so the sub-process ShipOrder runs
+expect open ShipOrder.SecurePackageWithTape
+complete SecurePackageWithTape
+complete SelectShippingCarrier
+complete PrintShippingLabel
+complete AttachLabelToPacket
+expect status COMPLETED

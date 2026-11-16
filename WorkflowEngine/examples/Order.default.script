@@ -1,0 +1,7 @@
+# The amount is set when the check is completed; 20 takes the default branch.
+start
+complete Check amount=20
+expect open Reject
+expect variable amount = 20
+complete Reject
+expect status COMPLETED

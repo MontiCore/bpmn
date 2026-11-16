@@ -142,4 +142,49 @@ public class BPMNInterpreterTest extends AbstractTest {
     assertEquals(List.of("Ship"), names(second.getRunning()));
   }
   
+  @Test
+  public void testAStateKnowsWhatHappenedInItsStep() {
+    final ASTWFProcess process = load("SimpleProcess");
+    final BPMNInterpreter interpreter = BPMNInterpreterBuilder.buildDefault(process);
+    
+    final BPMNState first = interpreter.start();
+    assertEquals(List.of("EVENT_OCCURRED Start", "ACTIVITY_STARTED Prepare"), first.getTrace()
+        .stream().map(BPMNTraceEntry::toString).collect(Collectors.toList()));
+    
+    // the trace belongs to one step, the next state starts a new one
+    final BPMNState second = interpreter.interpret(first, activity(process, "Prepare"));
+    assertEquals(List.of("ACTIVITY_COMPLETED Prepare", "ACTIVITY_STARTED Ship"), second.getTrace()
+        .stream().map(BPMNTraceEntry::toString).collect(Collectors.toList()));
+    assertEquals(2, first.getTrace().size());
+  }
+  
+  @Test
+  public void testEnabledSignalsAndLimitations() {
+    final ASTWFProcess process = load("EventProcess");
+    final BPMNInterpreter interpreter = BPMNInterpreterBuilder.buildDefault(process);
+    
+    BPMNState state = interpreter.start();
+    assertEquals(List.of("RequestOffer"), names(interpreter.getEnabledSignals(state)));
+    state = interpreter.interpret(state, activity(process, "RequestOffer"));
+    assertEquals(List.of("OfferReceived"), names(interpreter.getEnabledSignals(state)));
+    assertFalse(interpreter.isDeadlocked(state));
+    
+    // the process only uses constructs that are executed as modelled
+    assertTrue(interpreter.getLimitations().isEmpty());
+    assertTrue(Log.getFindings().isEmpty());
+  }
+  
+  @Test
+  public void testAConditionOverADataObjectWithoutValueIsAnError() {
+    final ASTWFProcess process = load("GatewayProcess");
+    final BPMNInterpreter interpreter = BPMNInterpreterBuilder.buildDefault(process);
+    
+    BPMNState state = interpreter.start();
+    state = interpreter.interpret(state, activity(process, "Check"));
+    
+    // 'amount' was never set; the interpreter does not assume a value for it
+    assertTrue(Log.getFindings().stream().anyMatch(f -> f.getMsg().startsWith("0xWFM9214")));
+    assertTrue(interpreter.snapshotVariables().isEmpty());
+  }
+  
 }

@@ -1,0 +1,21 @@
+/* (c) https://github.com/MontiCore/monticore */
+
+/*
+ * A model that is not sound: the exclusive split activates one branch, the parallel merge waits
+ * for both. The engine notices that the instance cannot continue and marks it as failed.
+ */
+process Deadlock {
+  data fast : boolean;
+
+  start event Start;
+  split xor Choose;
+  task A;
+  task B;
+  merge and Join;
+  end event Done;
+
+  Start -> Choose;
+  Choose -> [fast] A -> Join;
+  Choose -> [_] B -> Join;
+  Join -> Done;
+}

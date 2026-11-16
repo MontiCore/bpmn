@@ -1,0 +1,12 @@
+# The regular case: submitted in time, no violations, released by the reviewer.
+start
+expect open RecordHours, SubmissionDeadline
+complete RecordHours
+complete SubmitTimesheet
+complete CheckWorkingTime hasViolations=false
+complete RegisterSubmission
+complete AnnounceSubmission
+expect open Review, AbsenceEntered
+complete Review correct=true
+complete Release
+expect status COMPLETED

@@ -10,6 +10,8 @@ import de.monticore.bpmn.workflow.WorkflowMill;
 import de.monticore.bpmn.workflow._ast.ASTWorkflowCompilationUnit;
 import de.monticore.bpmn.workflow._cocos.WorkflowCoCoChecker;
 import de.monticore.bpmn.workflow._parser.WorkflowParser;
+import de.monticore.bpmn.workflow._symboltable.IWorkflowArtifactScope;
+import de.monticore.bpmn.workflow._symboltable.IWorkflowScope;
 import de.monticore.bpmn.workflow._symboltable.WorkflowSTCompleter;
 import de.monticore.bpmn.workflow._visitor.WorkflowTraverser;
 import de.monticore.io.paths.MCPath;
@@ -28,6 +30,10 @@ import java.util.Optional;
  *
  * <p>This is the same pipeline that {@code WorkflowTool} uses. The engine needs it because a
  * process definition is stored as its source and is parsed again whenever the engine is started.
+ *
+ * <p>Problems of the model are reported to the {@link Log}. A model with errors is returned
+ * nevertheless as far as it could be parsed; whoever calls the loader decides what to do with it.
+ * The engine refuses to deploy it.
  */
 public class ProcessModelLoader {
   
@@ -97,7 +103,8 @@ public class ProcessModelLoader {
     if (!defaultImports.isEmpty()) {
       new AddMoreImports(Lists.newArrayList(defaultImports)).transform(ast);
     }
-    WorkflowMill.scopesGenitorDelegator().createFromAST(ast);
+    final IWorkflowArtifactScope scope = WorkflowMill.scopesGenitorDelegator().createFromAST(ast);
+    forgetOlderVersions(scope);
     new AddNameToInlineFlowNodes().transform(ast);
     new AddSequenceFlowToFlowNodes().transform(ast);
     
@@ -108,6 +115,25 @@ public class ProcessModelLoader {
     
     final WorkflowCoCoChecker checker = WorkflowCoCos.getBasicChecker();
     checker.checkAll(ast);
+  }
+  
+  /**
+   * Every model that is loaded adds its symbols to the global scope. A process is loaded many
+   * times over the life of an engine: once per deployed version and again after every restart. The
+   * global scope would then know the same process several times, so the symbols of an earlier load
+   * are removed from it. An AST that has already been loaded stays intact, its scopes still
+   * resolve names upwards.
+   */
+  protected void forgetOlderVersions(final IWorkflowArtifactScope loaded) {
+    final List<String> processes = loaded.getLocalWFProcessSymbols().stream().map(symbol -> symbol
+        .getName()).toList();
+    for (IWorkflowScope scope : List.copyOf(WorkflowMill.globalScope().getSubScopes())) {
+      if (scope != loaded && scope instanceof IWorkflowArtifactScope other && other.getPackageName()
+          .equals(loaded.getPackageName()) && other.getLocalWFProcessSymbols().stream().anyMatch(
+              symbol -> processes.contains(symbol.getName()))) {
+        WorkflowMill.globalScope().removeSubScope(scope);
+      }
+    }
   }
   
 }

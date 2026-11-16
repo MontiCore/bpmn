@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
+import java.util.TimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -68,6 +69,29 @@ public class TimerCalculator {
     return condition instanceof ASTEveryTimeCondition || condition instanceof ASTCronCondition;
   }
   
+  /**
+   * Computes the occurrence of a repeating timer that follows a given one.
+   *
+   * @param condition the timer condition of the event
+   * @param previous when the timer occurred the last time
+   * @param occurrences how often the timer occurred so far
+   * @return when the timer occurs the next time, empty if it does not occur again
+   */
+  public Optional<Instant> nextOccurrence(final ASTTimerCondition condition, final Instant previous,
+      final int occurrences) {
+    if (condition instanceof ASTEveryTimeCondition every) {
+      if (every.isPresentTimes() && occurrences >= every.getTimes().getValue()) {
+        return Optional.empty(); // the timer was limited to a number of occurrences
+      }
+      return Optional.of(plus(previous, every.getPeriod().getPeriod()));
+    }
+    if (condition instanceof ASTCronCondition cron) {
+      return ExecutionTime.forCron(cron.getCron()).nextExecution(ZonedDateTime.ofInstant(previous,
+          zone)).map(ZonedDateTime::toInstant);
+    }
+    return Optional.empty();
+  }
+  
   protected Instant plus(final Instant reference, final org.joda.time.Period period) {
     return Instant.ofEpochMilli(new DateTime(reference.toEpochMilli(), zone()).plus(period)
         .getMillis());
@@ -87,6 +111,9 @@ public class TimerCalculator {
     return Instant.ofEpochMilli(localDateTime.toDateTime(zone()).getMillis());
   }
   
-  protected DateTimeZone zone() { return DateTimeZone.forID(zone.getId()); }
+  /** Joda-Time does not know every id of java.time, e.g., "Z"; a {@link TimeZone} knows them. */
+  protected DateTimeZone zone() {
+    return DateTimeZone.forTimeZone(TimeZone.getTimeZone(zone));
+  }
   
 }

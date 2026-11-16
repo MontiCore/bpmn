@@ -1,0 +1,6 @@
+# The data is invalid: the error leaves the sub-process via its boundary event.
+start
+complete CheckData valid=false
+expect open Fix
+complete Fix
+expect status COMPLETED
