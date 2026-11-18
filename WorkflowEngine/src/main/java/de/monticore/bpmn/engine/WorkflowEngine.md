@@ -27,7 +27,7 @@ java -jar WorkflowCLI/target/libs/BPMN.jar -i WorkflowEngine/examples/Approval.w
 ```
 
 Without a script the instance is driven automatically. A script drives it step
-by step and states what it expects. The folder
+by step and states what it expects; with `-x -` its commands are typed. The folder
 [examples](../../../../../../examples/README.md) contains models with scripts
 for the constructs the engine supports.
 

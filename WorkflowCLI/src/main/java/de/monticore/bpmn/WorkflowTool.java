@@ -126,6 +126,8 @@ public class WorkflowTool extends de.monticore.bpmn.workflow.WorkflowTool {
       // execution with the workflow engine
       if (cmd.hasOption("x")) {
         final WorkflowRunner runner = new WorkflowRunner(System.out);
+        // the engine reads the model itself; it has to see the model the way this tool does
+        runner.withDefaultImport(OCL_TYPES.getStatement());
         for (String path : modelPath) {
           runner.withSymbolPath(Paths.get(path));
         }
@@ -137,6 +139,9 @@ public class WorkflowTool extends de.monticore.bpmn.workflow.WorkflowTool {
         final String script = cmd.getOptionValue("x");
         if (script == null) {
           executionResult = runner.run(Path.of(modelFile), (java.io.BufferedReader) null);
+        }
+        else if (script.equals("-")) {
+          executionResult = runner.runInteractively(Path.of(modelFile));
         }
         else {
           try (
@@ -194,7 +199,7 @@ public class WorkflowTool extends de.monticore.bpmn.workflow.WorkflowTool {
     
     // execute the process model
     Option execute = Option.builder("x").longOpt("execute").desc(
-        "Executes the input process model specified by `-i` with the workflow engine and prints what happens. The optional argument is a script that drives the instance; without it the instance is driven automatically.")
+        "Executes the input process model specified by `-i` with the workflow engine and prints what happens. The optional argument is a script that drives the instance; `-` reads the commands of the script from the standard input. Without an argument the instance is driven automatically.")
         .optionalArg(true).numberOfArgs(1).build();
     options.addOption(execute);
     

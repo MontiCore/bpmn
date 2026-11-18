@@ -1,0 +1,22 @@
+ /* (c) https://github.com/MontiCore/monticore */
+package de.monticore.bpmn.examples;
+
+/* Uses a type that the tool adds to every model: Date is not imported here. */
+process Deadline {
+
+  data due : Date;
+  data urgent : boolean;
+
+  start event Received;
+  task Plan;
+  split xor Urgency;
+  task Expedite;
+  task Queue;
+  merge xor Planned;
+  end event Done;
+
+  Received -> Plan -> Urgency;
+  Urgency -> [urgent] Expedite -> Planned;
+  Urgency -> [_] Queue -> Planned;
+  Planned -> Done;
+}

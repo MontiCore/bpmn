@@ -30,6 +30,14 @@ either, the first open event is triggered. Initial values are given with `-var`:
 java -jar WorkflowCLI/target/libs/BPMN.jar -i WorkflowEngine/examples/Order.wfm -x -var amount=20
 ```
 
+The commands of a script can also be typed: with `-` as the script the tool
+reads one command per line from the standard input. `help` lists the commands,
+`exit` ends the run:
+
+```
+java -jar WorkflowCLI/target/libs/BPMN.jar -i WorkflowEngine/examples/Order.wfm -x -
+```
+
 The output lists what happens in every step and what the instance waits for
 afterwards:
 
@@ -80,6 +88,7 @@ are ignored.
 | `start` | starts the instance; implicit before the first other command |
 | `complete Check` | completes an activity; values may follow: `complete Check ok=true` |
 | `trigger Paid` | triggers an event; values may follow |
+| `signal Check` | completes the activity or triggers the event of that name; values may follow |
 | `wait P1D` | lets time pass (ISO 8601 duration) and executes the timers that become due |
 | `auto` | continues automatically until the instance ends |
 | `expect status COMPLETED` | checks the status: `ACTIVE`, `COMPLETED`, `TERMINATED`, `FAILED` |
@@ -87,6 +96,8 @@ are ignored.
 | `expect variable amount = 150` | checks the value of a data object |
 | `show` | prints what the instance waits for |
 | `history` | prints the audit trail |
+| `help` | lists the commands |
+| `exit` | ends the run; the commands after it are not read |
 
 A value is `true`, `false`, a number, a text in double quotes, or a JSON object
 or array. A JSON object stands for an object of a class of a class diagram, its

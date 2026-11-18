@@ -53,6 +53,7 @@ import java.util.TreeSet;
  * start start the instance (implicit before the first other command)
  * complete Check complete an activity; values may follow: complete Check ok=true
  * trigger PaymentReceived trigger an event; values may follow
+ * signal Check complete the activity or trigger the event of that name
  * wait P1D let time pass (ISO 8601) and execute the timers that become due
  * auto continue automatically until the instance ends
  * expect status COMPLETED check the status of the instance
@@ -60,6 +61,8 @@ import java.util.TreeSet;
  * expect variable amount = 150 check the value of a data object
  * show print the state of the instance
  * history print the audit trail
+ * help list the commands
+ * exit end the run
  * </pre>
  *
  * <p>Lines that are empty or start with {@code #} are ignored. A value is {@code true},
@@ -68,6 +71,9 @@ import java.util.TreeSet;
  *
  * <p>The automatic mode completes the first open activity; if there is none it lets the next timer
  * elapse; if there is none either it triggers the first open event.
+ *
+ * <p>The commands can also be typed instead of being read from a file, cf.
+ * {@link #runInteractively(Path)}.
  */
 public class WorkflowRunner {
   
@@ -98,7 +104,16 @@ public class WorkflowRunner {
   
   protected final List<Path> symbolPath = new ArrayList<>();
   
+  /** Models whose symbols the executed model may use without importing them itself. */
+  protected final List<String> defaultImports = new ArrayList<>();
+  
   protected final Map<String, Object> initialValues = new LinkedHashMap<>();
+  
+  /** Whether the commands are typed by a person; the runner then says how to go on. */
+  protected boolean interactive;
+  
+  /** Set by the command {@code exit}: no further command is read. */
+  protected boolean exited;
   
   protected int stepLimit = 100;
   
@@ -134,15 +149,15 @@ public class WorkflowRunner {
   public int run(final String[] args) {
     Path model = null;
     Path script = null;
-    boolean interactive = false;
+    boolean fromStandardInput = false;
     try {
       for (int i = 0; i < args.length; i++) {
         switch (args[i]) {
           case "-path" -> symbolPath.add(Path.of(args[++i]));
           case "-var" -> withInitialValue(args[++i]);
           case "-script" -> {
-            interactive = args[++i].equals("-");
-            script = interactive ? null : Path.of(args[i]);
+            fromStandardInput = args[++i].equals("-");
+            script = fromStandardInput ? null : Path.of(args[i]);
           }
           case "-steps" -> stepLimit = Integer.parseInt(args[++i]);
           case "-at" -> clock.now = Instant.parse(args[++i]);
@@ -169,9 +184,8 @@ public class WorkflowRunner {
       return 2;
     }
     
-    if (interactive) {
-      return run(model, new BufferedReader(new InputStreamReader(System.in,
-          StandardCharsets.UTF_8)));
+    if (fromStandardInput) {
+      return runInteractively(model);
     }
     if (script != null) {
       try (
@@ -205,6 +219,17 @@ public class WorkflowRunner {
     return this;
   }
   
+  /**
+   * Lets the executed model use the symbols of another model without importing them itself, e.g.,
+   * the types of a library that a tool adds to every model it reads.
+   *
+   * @param qualifiedName the qualified name of the model whose symbols are imported
+   */
+  public WorkflowRunner withDefaultImport(final String qualifiedName) {
+    defaultImports.add(qualifiedName);
+    return this;
+  }
+  
   /** @param assignment an initial value in the form {@code name=value} */
   public WorkflowRunner withInitialValue(final String assignment) {
     final int separator = assignment.indexOf('=');
@@ -217,6 +242,18 @@ public class WorkflowRunner {
   }
   
   /**
+   * Deploys a model and executes the commands that are typed into the standard input on one
+   * instance of it. The run ends with the command {@code exit} or with the end of the input.
+   *
+   * @param model the file of the process model
+   * @return 0 if the run succeeded, 1 if a step or an expectation failed
+   */
+  public int runInteractively(final Path model) {
+    interactive = true;
+    return run(model, new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8)));
+  }
+  
+  /**
    * Deploys a model and executes a script on one instance of it.
    *
    * @param model the file of the process model
@@ -224,7 +261,9 @@ public class WorkflowRunner {
    * @return 0 if the run succeeded, 1 if a step or an expectation failed
    */
   public int run(final Path model, final BufferedReader script) {
-    engine = new WorkflowEngine(new ProcessModelLoader(), new InMemoryProcessDefinitionRepository(),
+    final ProcessModelLoader loader = new ProcessModelLoader();
+    defaultImports.forEach(loader::withDefaultImport);
+    engine = new WorkflowEngine(loader, new InMemoryProcessDefinitionRepository(),
         new InMemoryProcessInstanceRepository(), new InMemoryJobRepository(),
         new InMemoryHistoryLog(), new TimerCalculator(ZoneOffset.UTC)).withClock(clock);
     engine.withSymbolPath(symbolPath.toArray(new Path[0]));
@@ -239,6 +278,9 @@ public class WorkflowRunner {
     out.println("Deployed process '" + definition.getKey() + "' (version " + definition.getVersion()
         + ") from " + model.getFileName());
     definition.getLimitations().forEach(limitation -> out.println("  note: " + limitation));
+    if (interactive) {
+      out.println("Enter one command per line; 'help' lists the commands, 'exit' ends the run.");
+    }
     
     try {
       if (script == null) {
@@ -247,11 +289,13 @@ public class WorkflowRunner {
       }
       else {
         String line = script.readLine();
-        while (line != null) {
+        while (line != null && !exited) {
           execute(line.trim());
-          line = script.readLine();
+          line = exited ? null : script.readLine();
         }
-        start(); // a script without any command still starts the instance
+        if (!exited) {
+          start(); // a script without any command still starts the instance
+        }
       }
     }
     catch (IOException e) {
@@ -296,7 +340,9 @@ public class WorkflowRunner {
           printState();
         }
         case "history" -> history();
-        default -> fail("Unknown command '" + command + "'.");
+        case "help" -> printCommands();
+        case "exit" -> exited = true;
+        default -> fail("Unknown command '" + command + "'; 'help' lists the commands.");
       }
     }
     catch (IllegalArgumentException | IllegalStateException e) {
@@ -486,6 +532,32 @@ public class WorkflowRunner {
   
   protected ProcessInstance instance() {
     return engine.findInstance(instanceId).orElseThrow();
+  }
+  
+  /** Lists the commands that a script may contain. */
+  public void printCommands() {
+    printCommand("set <name> = <value>", "gives a data object a value; before 'start' it is an"
+        + " initial value");
+    printCommand("start", "starts the instance; implicit before the first other command");
+    printCommand("complete <activity> [n=v ...]", "completes an activity; values may follow");
+    printCommand("trigger <event> [n=v ...]", "triggers an event; values may follow");
+    printCommand("signal <name> [n=v ...]", "completes the activity or triggers the event of that"
+        + " name");
+    printCommand("wait <duration>", "lets time pass, e.g., PT2H or P1D, and executes the timers"
+        + " that become due");
+    printCommand("auto", "continues automatically until the instance ends");
+    printCommand("expect status <status>", "checks the status: ACTIVE, COMPLETED, TERMINATED,"
+        + " FAILED");
+    printCommand("expect open <name>, <name>", "checks what may be signalled next");
+    printCommand("expect variable <name> = <value>", "checks the value of a data object");
+    printCommand("show", "prints what the instance waits for");
+    printCommand("history", "prints the audit trail");
+    printCommand("help", "prints this list");
+    printCommand("exit", "ends the run");
+  }
+  
+  protected void printCommand(final String command, final String effect) {
+    out.println(String.format("  %-34s%s", command, effect));
   }
   
   /** Prints what happened since the last call and what the instance waits for now. */

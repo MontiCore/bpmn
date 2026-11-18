@@ -6,9 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.monticore.bpmn.engine.runner.WorkflowRunner;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -88,6 +90,64 @@ public class ExamplesTest extends AbstractEngineTest {
     assertEquals(1, result);
     assertTrue(output.toString(StandardCharsets.UTF_8).contains("FAILED: Expected open"));
     Files.delete(script);
+  }
+  
+  @Test
+  public void testTheCommandsAreListedAndExitEndsTheRun() {
+    final ByteArrayOutputStream output = new ByteArrayOutputStream();
+    final BufferedReader commands = new BufferedReader(new StringReader(
+        "help\nset amount = 150\ncomplete Check\nexit\ncomplete Approve\n"));
+    
+    final int result = new WorkflowRunner(new PrintStream(output, true, StandardCharsets.UTF_8))
+        .run(EXAMPLES.resolve("Order.wfm"), commands);
+    
+    final String text = output.toString(StandardCharsets.UTF_8);
+    assertEquals(0, result, text);
+    assertTrue(text.contains("expect variable <name> = <value>"), text);
+    assertTrue(text.contains("open: Approve"), text);
+    // the command after 'exit' is not read anymore
+    assertFalse(text.contains("> complete Approve"), text);
+    assertTrue(text.contains("Result: ACTIVE after 1 step(s)"), text);
+  }
+  
+  @Test
+  public void testAnUnknownCommandFailsTheRunAndPointsToTheHelp() {
+    final ByteArrayOutputStream output = new ByteArrayOutputStream();
+    
+    final int result = new WorkflowRunner(new PrintStream(output, true, StandardCharsets.UTF_8))
+        .run(EXAMPLES.resolve("Order.wfm"), new BufferedReader(new StringReader("finish Check\n")));
+    
+    assertEquals(1, result);
+    assertTrue(output.toString(StandardCharsets.UTF_8).contains(
+        "FAILED: Unknown command 'finish'; 'help' lists the commands."));
+  }
+  
+  @Test
+  public void testADefaultImportLetsAModelUseTypesItDoesNotImport() throws IOException {
+    // the process uses the class Order of the class diagram OrderToDelivery without importing it
+    final Path model = Files.createTempFile("Unimported", ".wfm");
+    Files.writeString(model, "process Unimported {\n  data order : Order;\n"
+        + "  start event Begin;\n  task Work;\n  split xor Expensive;\n  task Approve;\n"
+        + "  merge xor Join;\n  end event End;\n\n  Begin -> Work -> Expensive;\n"
+        + "  Expensive -> [order.totalCost > 100] Approve -> Join;\n  Expensive -> [_] Join;\n"
+        + "  Join -> End;\n}\n");
+    
+    final ByteArrayOutputStream without = new ByteArrayOutputStream();
+    assertEquals(1, new WorkflowRunner(new PrintStream(without, true, StandardCharsets.UTF_8))
+        .withSymbolPath(EXAMPLES).run(model, (BufferedReader) null));
+    assertTrue(without.toString(StandardCharsets.UTF_8).contains("could not be deployed"));
+    
+    setUp();
+    final ByteArrayOutputStream with = new ByteArrayOutputStream();
+    final int result = new WorkflowRunner(new PrintStream(with, true, StandardCharsets.UTF_8))
+        .withSymbolPath(EXAMPLES).withDefaultImport("de.monticore.bpmn.cds.OrderToDelivery")
+        .withInitialValue("order={\"totalCost\": 150.0}").run(model, (BufferedReader) null);
+    
+    final String text = with.toString(StandardCharsets.UTF_8);
+    assertEquals(0, result, text);
+    assertTrue(text.contains("> complete Approve"), text);
+    assertTrue(text.contains("Result: COMPLETED"), text);
+    Files.delete(model);
   }
   
 }
