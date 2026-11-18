@@ -80,7 +80,8 @@ java -jar WorkflowCLI/target/libs/BPMN.jar -i WorkflowEngine/examples/OrderToDel
 ## Scripts
 
 A script has one command per line. Empty lines and lines that start with `#`
-are ignored.
+are ignored. A script is read as UTF-8; a byte order mark at its start, as some
+Windows tools write it, is ignored.
 
 | Command | Effect |
 |---|---|

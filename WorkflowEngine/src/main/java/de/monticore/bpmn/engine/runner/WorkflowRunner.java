@@ -288,7 +288,7 @@ public class WorkflowRunner {
         auto();
       }
       else {
-        String line = script.readLine();
+        String line = withoutByteOrderMark(script.readLine());
         while (line != null && !exited) {
           execute(line.trim());
           line = exited ? null : script.readLine();
@@ -314,6 +314,18 @@ public class WorkflowRunner {
   /* ======================================================================
    * Commands
    * ====================================================================== */
+  
+  /**
+   * Removes the byte order mark that Windows tools put in front of a text, e.g., an editor that
+   * saves a script as "UTF-8 with BOM" or PowerShell when it pipes commands or redirects them into
+   * a file. The mark is no part of the first command.
+   *
+   * @param firstLine the first line of a script, {@code null} if the script is empty
+   * @return the line without a leading byte order mark
+   */
+  protected static String withoutByteOrderMark(final String firstLine) {
+    return firstLine != null && firstLine.startsWith("\uFEFF") ? firstLine.substring(1) : firstLine;
+  }
   
   /** Executes one line of a script. */
   protected void execute(final String line) {

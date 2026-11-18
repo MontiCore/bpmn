@@ -123,6 +123,24 @@ public class ExamplesTest extends AbstractEngineTest {
   }
   
   @Test
+  public void testAByteOrderMarkBeforeTheFirstCommandIsIgnored() {
+    // Windows tools start a text with a byte order mark, e.g., an editor or a pipe of PowerShell
+    for (String script : List.of("\uFEFFset amount = 150\ncomplete Check\nexpect open Approve\n",
+        "\uFEFF# a comment\nset amount = 150\ncomplete Check\nexpect open Approve\n")) {
+      setUp();
+      final ByteArrayOutputStream output = new ByteArrayOutputStream();
+      
+      final int result = new WorkflowRunner(new PrintStream(output, true, StandardCharsets.UTF_8))
+          .run(EXAMPLES.resolve("Order.wfm"), new BufferedReader(new StringReader(script)));
+      
+      final String text = output.toString(StandardCharsets.UTF_8);
+      assertEquals(0, result, text);
+      assertTrue(text.contains("> set amount = 150"), text);
+      assertTrue(text.contains("ok: open is [Approve]"), text);
+    }
+  }
+  
+  @Test
   public void testADefaultImportLetsAModelUseTypesItDoesNotImport() throws IOException {
     // the process uses the class Order of the class diagram OrderToDelivery without importing it
     final Path model = Files.createTempFile("Unimported", ".wfm");

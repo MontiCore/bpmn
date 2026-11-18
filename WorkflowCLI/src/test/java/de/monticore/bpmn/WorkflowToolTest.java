@@ -25,6 +25,9 @@ public class WorkflowToolTest {
   /** Where the symbol file of the default types lies that the tool adds to every model. */
   protected static final String DEFAULT_TYPES_DIR = "../WorkflowDSL/src/test/resources/";
   
+  /** The byte order mark that Windows tools put in front of a text in UTF-8. */
+  protected static final byte[] BYTE_ORDER_MARK = { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
+  
   @BeforeEach
   public void setup() {
     Log.init();
@@ -181,6 +184,51 @@ public class WorkflowToolTest {
     // nothing is read after the command exit
     Assertions.assertFalse(output.contains("> complete Reject"), output);
     Assertions.assertTrue(output.contains("Result: ACTIVE after 1 step(s)"), output);
+  }
+  
+  /** @return the text in UTF-8 with a byte order mark in front, lines end as on Windows */
+  protected static byte[] withByteOrderMark(final String... lines) {
+    final byte[] content = (String.join("\r\n", lines) + "\r\n").getBytes(StandardCharsets.UTF_8);
+    final byte[] result = new byte[BYTE_ORDER_MARK.length + content.length];
+    System.arraycopy(BYTE_ORDER_MARK, 0, result, 0, BYTE_ORDER_MARK.length);
+    System.arraycopy(content, 0, result, BYTE_ORDER_MARK.length, content.length);
+    return result;
+  }
+  
+  @Test
+  public void testExecuteScriptThatStartsWithAByteOrderMark() throws IOException {
+    // e.g., a script that was written with the redirection operator of PowerShell
+    final Path script = Files.createTempFile("marked", ".script");
+    Files.write(script, withByteOrderMark("set amount = 150", "complete Check",
+        "expect open Approve"));
+    final WorkflowTool tool = new WorkflowTool();
+    
+    final String output = run(tool, "-i", EXAMPLES_DIR + "Order.wfm", "-x", script.toString());
+    
+    Assertions.assertEquals(0, tool.getExecutionResult(), output);
+    Assertions.assertTrue(output.contains("> set amount = 150"), output);
+    Assertions.assertTrue(output.contains("ok: open is [Approve]"), output);
+    Files.delete(script);
+  }
+  
+  @Test
+  public void testExecuteCommandsFromStandardInputWithAByteOrderMark() {
+    // e.g., commands that PowerShell pipes into the tool
+    final InputStream keyboard = System.in;
+    System.setIn(new ByteArrayInputStream(withByteOrderMark("set amount = 20", "complete Check",
+        "exit")));
+    final WorkflowTool tool = new WorkflowTool();
+    final String output;
+    try {
+      output = run(tool, "-i", EXAMPLES_DIR + "Order.wfm", "-x", "-");
+    }
+    finally {
+      System.setIn(keyboard);
+    }
+    
+    Assertions.assertEquals(0, tool.getExecutionResult(), output);
+    Assertions.assertTrue(output.contains("Started an instance with {amount=20}"), output);
+    Assertions.assertTrue(output.contains("open: Reject"), output);
   }
   
 }
