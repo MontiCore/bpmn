@@ -13,7 +13,12 @@ import com.google.gson.GsonBuilder;
  */
 public class ProcessStateJson {
   
-  protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+  /**
+   * Writes names and texts as they are. By default Gson replaces characters that have a meaning in
+   * HTML by escape sequences, e.g., the arrow in the key of a sequence flow.
+   */
+  protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping()
+      .create();
   
   public static String toJson(final PersistentProcessState state) {
     return GSON.toJson(state);

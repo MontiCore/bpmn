@@ -16,6 +16,25 @@ import org.junit.jupiter.api.Test;
 
 public class DurableStateTest extends AbstractEngineTest {
   
+  /** Two parallel branches: after one of them, its token waits at the merge for the other one. */
+  protected static final String SHIPMENT = """
+      package de.monticore.bpmn.engine;
+      
+      process Shipment {
+        start event Ordered;
+        split and Fork;
+        task Pack;
+        task Invoice;
+        merge and Join;
+        end event Shipped;
+      
+        Ordered -> Fork;
+        Fork -> Pack -> Join;
+        Fork -> Invoice -> Join;
+        Join -> Shipped;
+      }
+      """;
+  
   /**
    * Simulates a restart: a new engine is built over the same tables, and the definitions have lost
    * their parsed model, exactly as if they had just been read from a database.
@@ -48,25 +67,8 @@ public class DurableStateTest extends AbstractEngineTest {
   
   @Test
   public void testTheStateOfAParallelInstanceSurvivesARestart() {
-    final String parallel = """
-        package de.monticore.bpmn.engine;
-        
-        process Shipment {
-          start event Ordered;
-          split and Fork;
-          task Pack;
-          task Invoice;
-          merge and Join;
-          end event Shipped;
-        
-          Ordered -> Fork;
-          Fork -> Pack -> Join;
-          Fork -> Invoice -> Join;
-          Join -> Shipped;
-        }
-        """;
     final WorkflowEngine before = new WorkflowEngine();
-    before.deploy(parallel);
+    before.deploy(SHIPMENT);
     
     ProcessInstance instance = before.start("Shipment");
     instance = before.completeTask(instance.getId(), "Pack");
@@ -98,6 +100,32 @@ public class DurableStateTest extends AbstractEngineTest {
     assertEquals(List.of("Approve"), restored.getRunning());
     assertEquals(instance.getState().getTokens(), restored.getTokens());
     assertEquals("150", restored.getVariables().get("amount").getValue());
+  }
+  
+  @Test
+  public void testTheJsonNamesAFlowTheWayTheStateDoes() {
+    final WorkflowEngine engine = new WorkflowEngine();
+    engine.deploy(SHIPMENT);
+    
+    ProcessInstance instance = engine.start("Shipment");
+    instance = engine.completeTask(instance.getId(), "Pack");
+    
+    final String json = ProcessStateJson.toJson(instance.getState());
+    
+    // the key of the flow is written as it is, without an escape sequence for the arrow
+    assertTrue(json.contains("\"Pack->Join\""), json);
+    assertEquals(List.of("Pack->Join"), ProcessStateJson.fromJson(json).getTokens());
+  }
+  
+  @Test
+  public void testAStateThatWasStoredWithAnEscapedArrowIsStillRead() {
+    // earlier versions wrote the arrow of a flow key as an escape sequence
+    final String stored = "{\"tokens\": [\"Pack-\\u003eJoin\"], \"running\": [\"Invoice\"]}";
+    
+    final PersistentProcessState restored = ProcessStateJson.fromJson(stored);
+    
+    assertEquals(List.of("Pack->Join"), restored.getTokens());
+    assertEquals(List.of("Invoice"), restored.getRunning());
   }
   
   @Test

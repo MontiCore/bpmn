@@ -28,9 +28,12 @@ public class PersistentValue {
     BOOLEAN, INT, DOUBLE, STRING, JSON, REFERENCE, NULL
   }
   
-  /** Keeps integers as integers; by default Gson reads every number as a double. */
+  /**
+   * Keeps integers as integers and texts as they are. By default Gson reads every number as a
+   * double and replaces characters that have a meaning in HTML by escape sequences.
+   */
   protected static final Gson GSON = new GsonBuilder().setObjectToNumberStrategy(
-      ToNumberPolicy.LONG_OR_DOUBLE).serializeNulls().create();
+      ToNumberPolicy.LONG_OR_DOUBLE).serializeNulls().disableHtmlEscaping().create();
   
   protected final Kind kind;
   

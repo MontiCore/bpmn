@@ -101,6 +101,26 @@ public class DataObjectTest extends AbstractEngineTest {
   }
   
   @Test
+  public void testTextsInPlainDataAreStoredAsTheyAre() {
+    final WorkflowEngine engine = new WorkflowEngine().withSymbolPath(SYMBOLS);
+    engine.deploy(STOCK);
+    final String text = "A&B <urgent> = 'O-1'";
+    final Map<String, Object> order = order(2, 50.0, true);
+    order.put("orderID", text);
+    final ProcessInstance instance = engine.start("Stock", Map.of("order", order, "checker", Map.of(
+        "allProductsAvailable", true)));
+    
+    // neither the value nor the state as a whole replaces characters by escape sequences
+    final PersistentValue stored = instance.getState().getVariables().get("order");
+    assertTrue(stored.getValue().contains(text), stored.getValue());
+    final String json = ProcessStateJson.toJson(instance.getState());
+    assertTrue(json.contains(text), json);
+    
+    final Object read = ProcessStateJson.fromJson(json).getVariables().get("order").toJavaObject();
+    assertEquals(text, ((Map<?, ?>) read).get("orderID"));
+  }
+  
+  @Test
   public void testAMissingAttributeFailsTheStep() {
     final WorkflowEngine engine = new WorkflowEngine().withSymbolPath(SYMBOLS);
     engine.deploy(STOCK);
