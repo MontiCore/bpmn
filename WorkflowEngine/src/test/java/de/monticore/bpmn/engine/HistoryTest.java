@@ -4,10 +4,14 @@ package de.monticore.bpmn.engine;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import de.monticore.bpmn.engine.history.HistoryEvent;
+import de.monticore.bpmn.engine.history.InMemoryHistoryLog;
 import de.monticore.bpmn.engine.instance.ProcessInstance;
 import de.monticore.bpmn.engine.instance.ProcessInstanceStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -103,6 +107,34 @@ public class HistoryTest extends AbstractEngineTest {
     assertTrue(trail.contains("ACTIVITY_CANCELLED Watch"));
     assertEquals("INSTANCE_TERMINATED ", trail.get(trail.size() - 1));
     assertEquals(0, count(trail, "ACTIVITY_ENDED Work"));
+  }
+  
+  @Test
+  public void testTheHistoryCanBeReadWhileItIsWritten() throws InterruptedException {
+    final InMemoryHistoryLog history = new InMemoryHistoryLog();
+    final int events = 20000;
+    final List<RuntimeException> failures = new CopyOnWriteArrayList<>();
+    final Thread writer = new Thread(() -> {
+      for (int i = 0; i < events; i++) {
+        history.append(new HistoryEvent("instance" + i % 10, HistoryEvent.Type.ACTIVITY_STARTED,
+            "Work", Instant.EPOCH));
+      }
+    });
+    
+    writer.start();
+    while (writer.isAlive() && failures.isEmpty()) {
+      try {
+        history.findByInstanceId("instance1");
+        history.findAll();
+      }
+      catch (RuntimeException e) {
+        failures.add(e);
+      }
+    }
+    writer.join();
+    
+    assertTrue(failures.isEmpty(), "Reading the history failed: " + failures);
+    assertEquals(events, history.findAll().size());
   }
   
 }
