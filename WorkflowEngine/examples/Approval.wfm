@@ -1,0 +1,19 @@
+/* (c) https://github.com/MontiCore/monticore */
+
+/* Timers at an activity: a reminder that does not interrupt it and a timeout that does. */
+process Approval {
+  start event Requested;
+  task Approve {
+    boundary event Reminder catch noninterrupt timer [after P1D];
+    boundary event Timeout catch timer [after P3D];
+  }
+  task SendReminder;
+  task Escalate;
+  end event Granted;
+  end event Reminded;
+  end event Escalated;
+
+  Requested -> Approve -> Granted;
+  Reminder -> SendReminder -> Reminded;
+  Timeout -> Escalate -> Escalated;
+}

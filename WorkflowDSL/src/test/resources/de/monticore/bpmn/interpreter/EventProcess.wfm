@@ -1,0 +1,14 @@
+/* (c) https://github.com/MontiCore/monticore */
+package de.monticore.bpmn.interpreter;
+
+process EventProcess {
+
+  message Confirmation : String;
+
+  start event Start;
+  task RequestOffer;
+  event OfferReceived catch message Confirmation;
+  end event Done;
+
+  Start -> RequestOffer -> OfferReceived -> Done;
+}

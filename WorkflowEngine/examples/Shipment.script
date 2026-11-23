@@ -1,0 +1,17 @@
+set express = true
+set fragile = true
+start
+# both branches of the parallel split are open at the same time
+expect open Pack, Invoice
+complete Invoice
+expect open Pack
+complete Pack
+# both extras were chosen, the default branch was not
+expect open BookCourier, AddPadding
+complete BookCourier
+# the inclusive merge still waits for the other extra
+expect open AddPadding
+complete AddPadding
+expect open HandOver
+complete HandOver
+expect status COMPLETED

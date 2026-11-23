@@ -1,0 +1,32 @@
+/* (c) https://github.com/MontiCore/monticore */
+
+/*
+ * A sub-process with an error: the error end event interrupts the sub-process and is caught by
+ * its boundary event. The review afterwards is a multi-instance activity with two instances.
+ */
+process Validation {
+  data valid : boolean;
+  error invalidInput : String;
+
+  start event Submitted;
+  subprocess Validate {
+    start event Begin;
+    task CheckData;
+    split xor Result;
+    end event Passed;
+    end event Invalid throw error invalidInput;
+
+    Begin -> CheckData -> Result;
+    Result -> [valid] Passed;
+    Result -> [_] Invalid;
+
+    boundary event OnInvalid catch error invalidInput;
+  }
+  task Review count 2 sequential;
+  task Fix;
+  end event Accepted;
+  end event Rejected;
+
+  Submitted -> Validate -> Review -> Accepted;
+  Validate.OnInvalid -> Fix -> Rejected;
+}

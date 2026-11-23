@@ -1,0 +1,105 @@
+ /* (c) https://github.com/MontiCore/monticore */ 
+
+import de.monticore.bpmn.cds.OrderToDelivery.*;
+
+process OrderToDeliveryWorkflow {
+    
+    data order:Order;
+    data checker:InventoryAvailabilityChecker;
+    data agreement:CustomerDeliveryAgreement;
+    store products:Product;
+
+    message cancelMsg:String;
+    operation prepCancelMsg(
+      in cancelMsg;
+      out cancelMsg
+    );
+    
+    lane Sales{
+        service task ProcessOrder{
+          webservice = ##webservice;
+          boundary event PossibleCancellation 
+            catch compensate ProcessOrder with RollbackOrderProcessing;
+        }
+        service task CheckProductAvailability
+          count [order.numberOfOrderedProducts] parallel
+          {
+            webservice = ##webservice;
+            in order:Order;
+          }
+        send task SendCancellationMessage{
+          webservice = ##webservice;
+          operation = prepCancelMsg;
+          message = cancelMsg;
+        }
+        service task RollbackOrderProcessing {
+          webservice = ##webservice;
+        }
+
+        split xor OrderFulfillable;
+        merge xor FinishOrderProcessing;
+        
+        start event ReceiveOrder catch;
+        event CancelOrder throw
+          compensate ProcessOrder;
+    }
+    
+    lane Warehouse{
+        
+        manual task PrepareAndPackProducts{
+          resources = order, products;
+        }
+        manual task PickUpOrder{
+          resources = order, products;
+        }
+        event OrderDelivered;
+
+        subprocess ShipOrder{
+          manual task AttachLabelToPacket{
+            resources = order, products;
+          }
+          manual task SecurePackageWithTape{
+            resources = TapeDispenser;
+          }
+          service task SelectShippingCarrier {
+            webservice = ##webservice;
+          }
+          service task PrintShippingLabel{
+            webservice = ##webservice;
+            operation = getAddress;
+          }
+          
+          operation getAddress(
+            in customerID;
+            out address
+          );
+          message customerID:String;
+          message address:DestinationAddress;
+
+          start event PrepareForShipment;
+          end event ShipmentDispatched;
+
+          PrepareForShipment -> SecurePackageWithTape 
+            -> SelectShippingCarrier -> PrintShippingLabel 
+            -> AttachLabelToPacket -> ShipmentDispatched;
+        }
+
+        end event OrderCompleted;
+    }  
+    
+    ReceiveOrder
+      -> ProcessOrder
+        -> CheckProductAvailability
+          -> OrderFulfillable
+            -> {
+                 [checker.allProductsAvailable] PrepareAndPackProducts
+                   -> { [agreement.isOrderPickedUp] PickUpOrder;
+                        [_] ShipOrder;
+                      }
+                   -> OrderDelivered;
+                 [!checker.allProductsAvailable] SendCancellationMessage
+                   -> CancelOrder;
+               }
+            -> FinishOrderProcessing
+              -> OrderCompleted;
+}

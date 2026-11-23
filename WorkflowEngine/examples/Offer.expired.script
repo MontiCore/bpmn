@@ -1,0 +1,6 @@
+# Nobody pays: after seven days the timer wins the race.
+start
+wait P7D
+expect open Cancel
+complete Cancel
+expect status COMPLETED

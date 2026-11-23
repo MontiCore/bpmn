@@ -1,0 +1,16 @@
+# The employee is late: the reminder is sent once, recording stays possible.
+start
+wait P14D
+expect open RecordHours, SendReminder, SubmissionDeadline
+complete SendReminder
+# another two weeks later nothing happens, the reminder was a one-off
+wait P14D
+expect open RecordHours, SubmissionDeadline
+complete RecordHours
+complete SubmitTimesheet
+complete CheckWorkingTime hasViolations=false
+complete RegisterSubmission
+complete AnnounceSubmission
+complete Review correct=true
+complete Release
+expect status COMPLETED

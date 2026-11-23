@@ -1,0 +1,19 @@
+/* (c) https://github.com/MontiCore/monticore */
+
+/* A race between a message and a timer: whichever occurs first decides how it goes on. */
+process Offer {
+  message payment : String;
+
+  start event Sent;
+  split receive first Wait;
+  event Paid catch message payment;
+  event Expired catch timer [after P7D];
+  task Ship;
+  task Cancel;
+  end event Shipped;
+  end event Cancelled;
+
+  Sent -> Wait;
+  Wait -> Paid -> Ship -> Shipped;
+  Wait -> Expired -> Cancel -> Cancelled;
+}

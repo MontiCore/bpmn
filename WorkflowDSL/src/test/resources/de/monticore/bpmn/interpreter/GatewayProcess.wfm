@@ -1,0 +1,20 @@
+/* (c) https://github.com/MontiCore/monticore */
+package de.monticore.bpmn.interpreter;
+
+process GatewayProcess {
+
+  data amount : int;
+
+  start event Start;
+  task Check;
+  split xor Decision;
+  task Approve;
+  task Reject;
+  merge xor Join;
+  end event Done;
+
+  Start -> Check -> Decision;
+  Decision -> [amount > 100] Approve -> Join;
+  Decision -> [_] Reject -> Join;
+  Join -> Done;
+}

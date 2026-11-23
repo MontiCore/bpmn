@@ -1,0 +1,8 @@
+# The order is above 100, so the conditional branch is taken.
+set amount = 150
+start
+expect open Check
+complete Check
+expect open Approve
+complete Approve
+expect status COMPLETED
