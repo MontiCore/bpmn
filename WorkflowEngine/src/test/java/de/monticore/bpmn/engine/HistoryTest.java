@@ -9,9 +9,10 @@ import de.monticore.bpmn.engine.history.InMemoryHistoryLog;
 import de.monticore.bpmn.engine.instance.ProcessInstance;
 import de.monticore.bpmn.engine.instance.ProcessInstanceStatus;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -113,16 +114,25 @@ public class HistoryTest extends AbstractEngineTest {
   public void testTheHistoryCanBeReadWhileItIsWritten() throws InterruptedException {
     final InMemoryHistoryLog history = new InMemoryHistoryLog();
     final int events = 20000;
-    final List<RuntimeException> failures = new CopyOnWriteArrayList<>();
+    final AtomicInteger written = new AtomicInteger();
     final Thread writer = new Thread(() -> {
       for (int i = 0; i < events; i++) {
         history.append(new HistoryEvent("instance" + i % 10, HistoryEvent.Type.ACTIVITY_STARTED,
             "Work", Instant.EPOCH));
+        written.incrementAndGet();
       }
     });
     
     writer.start();
+    final List<RuntimeException> failures = new ArrayList<>();
+    int read = 0;
     while (writer.isAlive() && failures.isEmpty()) {
+      // reading again at once would keep the writer waiting for the lock
+      if (written.get() < read + 100) {
+        Thread.yield();
+        continue;
+      }
+      read = written.get();
       try {
         history.findByInstanceId("instance1");
         history.findAll();
