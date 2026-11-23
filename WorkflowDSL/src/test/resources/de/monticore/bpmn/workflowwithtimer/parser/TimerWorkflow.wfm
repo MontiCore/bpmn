@@ -1,0 +1,8 @@
+/* (c) https://github.com/MontiCore/monticore */
+process TimerWorkflow {
+  start event Start;
+  event Timeout catch timer [after PT10S];
+  end event Done;
+
+  Start -> Timeout -> Done;
+}

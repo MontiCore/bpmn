@@ -1,0 +1,8 @@
+/* (c) https://github.com/MontiCore/monticore */
+process CronTimerWorkflow {
+  start event Start;
+  event Scheduled catch timer [cron [*/15 9 * * MON-FRI]];
+  end event Done;
+
+  Start -> Scheduled -> Done;
+}

@@ -1,0 +1,13 @@
+/* (c) https://github.com/MontiCore/monticore */
+process AllTimerConditions {
+  start event Start timer [cron [*/15 9 * * MON-FRI]];
+  event Delayed catch timer [after 10s];
+  event Scheduled catch timer [on 2026-07-20T12:00:00Z];
+  task Work {
+    boundary event Repeated catch noninterrupt timer [every 5min 3 times];
+  }
+  end event Done;
+
+  Start -> Delayed -> Scheduled -> Work -> Done;
+  Repeated -> Done;
+}
